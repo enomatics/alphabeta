@@ -8,9 +8,9 @@ import PreviewGlyph from "@/components/PreviewGlyph";
 
 export const UNITS_PER_EM = 1000;
 const CANVAS_SIZE = 400;
-const BASELINE_Y = 300;
-const X_HEIGHT_Y = 200;
-const CAP_HEIGHT_Y = 100;
+// const BASELINE_Y = 300;
+// const X_HEIGHT_Y = 200;
+// const CAP_HEIGHT_Y = 100;
 
 const LETTERS = Array.from({ length: 26 }, (_, i) =>
   String.fromCharCode(65 + i)
@@ -18,10 +18,10 @@ const LETTERS = Array.from({ length: 26 }, (_, i) =>
 
 const LINECAPS = ["butt", "round", "square"];
 
-const toFontSpace = (x: number, y: number) => ({
-  x: (x / CANVAS_SIZE) * UNITS_PER_EM,
-  y: ((CANVAS_SIZE - y) / CANVAS_SIZE) * UNITS_PER_EM,
-});
+// const toFontSpace = (x: number, y: number) => ({
+//   x: (x / CANVAS_SIZE) * UNITS_PER_EM,
+//   y: ((CANVAS_SIZE - y) / CANVAS_SIZE) * UNITS_PER_EM,
+// });
 
 // console.log(LETTERS);
 
@@ -60,40 +60,22 @@ export default function Home() {
       isDrawingMode: true,
     });
 
-    const guides = [
-      { y: BASELINE_Y, color: "blue", label: "Baseline" },
-      { y: X_HEIGHT_Y, color: "green", label: "x-height" },
-      { y: CAP_HEIGHT_Y, color: "red", label: "Cap Height" },
-    ];
-
-    guides.forEach(({ y, color, label }) => {
-      const line = new fabric.Line([0, y, CANVAS_SIZE, y], {
-        stroke: color,
-        strokeWidth: 1,
-        selectable: false,
-        evented: false,
-      });
-
-      const text = new fabric.Textbox(label, {
-        left: 10,
-        top: y - 15,
-        fontSize: 12,
-        // selectable: false,
-        // evented: false,
-        fill: color,
-      });
-
-      fabricCanvasRef.current?.add(line, text);
-    });
-
     fabricCanvasRef.current.freeDrawingBrush = new fabric.PencilBrush(
       fabricCanvasRef.current
     );
-    fabricCanvasRef.current.freeDrawingBrush.color = "#080808";
+    fabricCanvasRef.current.freeDrawingBrush.color = "#2dd881";
     fabricCanvasRef.current.freeDrawingBrush.width = 15;
     fabricCanvasRef.current.freeDrawingBrush.strokeLineCap = lineCap;
+
     // fabricCanvasRef.current.freeDrawingBrush.strokeMiterLimit = 10;
     // fabricCanvasRef.current.freeDrawingBrush.strokeLineJoin = "miter";
+
+    fabric.Object.prototype.set({
+      fill: "",
+      // fill: "#2dd881",
+      // stroke: null,
+      stroke: "#000000",
+    });
 
     return () => {
       fabricCanvasRef.current?.dispose();
@@ -113,15 +95,24 @@ export default function Home() {
     if (objects.length === 0) return;
     console.log(objects);
 
-    const svgPaths = objects.map((obj) => obj.toSVG());
+    const svgPaths = objects.map((obj) => {
+      const svg = obj
+        .toSVG()
+        .replace(/"(\d+) (\d+)"/g, (_, x, y) => `"${x} ${CANVAS_SIZE - y}"`)
+        .replace(/fill="[^"]*"/g, "")
+        .replace(/stroke="[^"]*"/g, "stroke='#000'");
+
+      return svg;
+    });
     console.log(svgPaths);
 
     const svgPath = combineSVGPaths(svgPaths);
 
+    //Remove Later
     const cmd: SVGCommand[] = SVGPathParser(svgPath);
     console.log(cmd);
-
     console.log(svgPath);
+
     setGlyphs((prev) => ({ ...prev, [selectedChar]: svgPath }));
     console.log(glyphs);
 
@@ -135,77 +126,84 @@ export default function Home() {
 
     const commands: SVGCommand[] = SVGPathParser(svgPath);
     const path = new opentype.Path();
+
+    //Removing fill and adding stroke instead
+    path.fill = null;
+    path.stroke = "#000000";
+    path.strokeWidth = 15;
+
     let currentX = 0;
     let currentY = 0;
 
     console.log(commands);
 
     commands.forEach((command) => {
-      // Converting coords to font space
-
       // Handling absolute / relative coords
-      const absX = command.x
-        ? currentX + (command.x || 0)
-        : command.x || currentX;
-      const absY = command.y
-        ? currentY + (command.y || 0)
-        : command.y || currentY;
+      const absX = command.relative ? currentX + (command.x || 0) : command.x;
+      const absY = command.relative ? currentY + (command.y || 0) : command.y;
 
       // Convert to font units
-      const { x: fontX, y: fontY } = toFontSpace(
-        absX as number,
-        absY as number
-      );
+      // const { x: fontX, y: fontY } = toFontSpace(
+      //   absX as number,
+      //   absY as number
+      // );
 
       switch (command.command) {
         case "moveto":
-          path.moveTo(fontX, fontY);
+          if (absX && absY) {
+            path.moveTo(absX, absY);
+            currentX = absX;
+            currentY = absY;
+          }
           break;
 
         case "lineto":
-          path.lineTo(fontX, fontY);
+          if (absX && absY) {
+            path.lineTo(absX, absY);
+            currentX = absX;
+            currentY = absY;
+          }
           break;
 
         case "curveto":
-          if (command.x1 && command.y1 && command.x2 && command.y2) {
-            const c1 = toFontSpace(
-              command.relative ? currentX + command.x1 : command.x1,
-              command.relative ? currentY + command.y1 : command.y1
-            );
+          if (
+            command.x1 &&
+            command.y1 &&
+            command.x2 &&
+            command.y2 &&
+            command.x &&
+            command.y
+          ) {
+            const x1 = command.relative ? currentX + command.x1 : command.x1;
+            const y1 = command.relative ? currentY + command.y1 : command.y1;
+            const x2 = command.relative ? currentX + command.x2 : command.x2;
+            const y2 = command.relative ? currentY + command.y2 : command.y2;
 
-            const c2 = toFontSpace(
-              command.relative ? currentX + command.x2 : command.x2,
-              command.relative ? currentY + command.y2 : command.y2
-            );
+            path.curveTo(x1, y1, x2, y2, absX!, absY!);
 
-            path.curveTo(c1.x, c1.y, c2.x, c2.y, fontX, fontY);
+            currentX = absX as number;
+            currentY = absY as number;
           }
           break;
 
         case "quadratic":
           if (command.x1 && command.y1) {
             // Convert quadratic to font space
-            const qp = toFontSpace(
-              command.relative ? currentX + command.x1 : command.x1,
-              command.relative ? currentY + command.y1 : command.y1
-            );
+            // const qp = toFontSpace(
+            //   command.relative ? currentX + command.x1 : command.x1,
+            //   command.relative ? currentY + command.y1 : command.y1
+            // );
 
             // Convert quadratic to cubic bézier
-            const cp1 = {
-              x:
-                currentX * (UNITS_PER_EM / CANVAS_SIZE) +
-                (2 / 3) * (qp.x - currentX * (UNITS_PER_EM / CANVAS_SIZE)),
-              y:
-                currentY * (UNITS_PER_EM / CANVAS_SIZE) +
-                (2 / 3) * (qp.y - currentY * (UNITS_PER_EM / CANVAS_SIZE)),
-            };
+            const cp1x = currentX + (2 / 3) * (command.x1 - currentX);
+            const cp1y = currentY + (2 / 3) * (command.y1 - currentY);
+            const cp2x = absX! + (2 / 3) * (command.x1 - absX!);
+            const cp2y = absY! + (2 / 3) * (command.y1 - absY!);
 
-            const cp2 = {
-              x: fontX + (2 / 3) * (qp.x - fontX),
-              y: fontY + (2 / 3) * (qp.y - fontY),
-            };
+            path.curveTo(cp1x, cp1y, cp2x, cp2y, absX!, absY!);
 
-            path.curveTo(cp1.x, cp1.y, cp2.x, cp2.y, fontX, fontY);
+            currentX = absX as number;
+            currentY = absY as number;
           }
           break;
 
@@ -213,9 +211,6 @@ export default function Home() {
           path.close();
           break;
       }
-
-      currentX = absX;
-      currentY = absY;
     });
 
     // path.fill = "black";
@@ -226,41 +221,27 @@ export default function Home() {
 
   //Export fn
   const exportFont = () => {
-    // I think .notdef glyph is required, so
-
-    // const notdefGlyph = new opentype.Glyph({
-    //   name: ".notdef",
-    //   advanceWidth: 650,
-    //   path: new opentype.Path(),
-    // });
-
     const font = new opentype.Font({
       familyName: fontName,
       styleName: "Normal",
       unitsPerEm: UNITS_PER_EM,
-      ascender: toFontSpace(0, CAP_HEIGHT_Y).y,
-      descender: toFontSpace(0, BASELINE_Y).y - UNITS_PER_EM,
-      glyphs: [
-        new opentype.Glyph({
-          name: ".notdef",
-          advanceWidth: 650,
-          path: new opentype.Path(),
-        }),
-        ...Object.entries<string>(glyphs).map(([char, svgPath]) => {
-          const path = parseSVGToPath(svgPath);
-          const bbox = path.getBoundingBox();
+      ascender: 800,
+      descender: -200,
+      glyphs: Object.entries<string>(glyphs).map(([char, svgPath]) => {
+        // const path = parseSVGToPath(svgPath);
+        // const bbox = path.getBoundingBox();
 
-          return new opentype.Glyph({
-            name: char,
-            unicode: char.charCodeAt(0),
-            advanceWidth: bbox.x2 - bbox.x1 + 100, // Width + side bearings
-            path: path,
-          });
-        }),
-      ],
+        return new opentype.Glyph({
+          name: char,
+          unicode: char.charCodeAt(0),
+          advanceWidth: 500, // Width + side bearings
+          path: parseSVGToPath(svgPath),
+        });
+      }),
     });
 
-    // font.download();
+    console.log(font);
+    console.log(font.glyphs);
 
     const blob = new Blob([font.toArrayBuffer()], { type: "font/ttf" });
     const url = URL.createObjectURL(blob);
@@ -271,7 +252,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col-reverse">
+    <div className="flex flex-col ">
       <p>Font Creator</p>
       <div className="flex flex-col items-center">
         <input

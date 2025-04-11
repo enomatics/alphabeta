@@ -17,24 +17,29 @@ const PreviewGlyph = ({ path }: { path: string }) => {
     pathEl.setAttribute(
       "transform",
       `
-            scale(1 -1)
-            translate(0 -${UNITS_PER_EM})
-        `
+            scale(1, -1)
+            scale-y(-1)
+            translate(0, -${UNITS_PER_EM})
+      `
     );
+    pathEl.setAttribute("fill", "none");
+    pathEl.setAttribute("stroke", "#000000");
+    pathEl.setAttribute("stroke-width", "15");
+    pathEl.setAttribute("stroke-linecap", "round");
 
     ref.current.appendChild(pathEl);
     console.log(path);
   }, [path]);
 
   return (
-    <div className="bg-white">
+    <div className="bg-slate-500 flex items-center justify-center">
       <svg
+        className="border-red-400 border"
         ref={ref}
         viewBox={`0 0 ${UNITS_PER_EM} ${UNITS_PER_EM}`}
         width={100}
         height={100}
       />
-      ;
     </div>
   );
 };
