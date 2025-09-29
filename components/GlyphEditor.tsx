@@ -99,6 +99,7 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
   };
 
   const convertKonvaToPath = (stage: Konva.Stage): string => {
+    // TODO: Implement a more comprehensive conversion if needed
     let pathData = "";
 
     stage.find("Line").forEach((line: any) => {

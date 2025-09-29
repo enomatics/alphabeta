@@ -1,11 +1,12 @@
 import { FontProject } from "@/types/font";
+import { Glyph } from "opentype.js";
 
 export class FontGenerator {
   static async generateFont(fontProject: FontProject): Promise<ArrayBuffer> {
     // TODO: Use opentype to generate actual font
     const opentype = await import("opentype.js");
 
-    const glyphs: any[] = [];
+    const glyphs: Glyph[] = [];
 
     // Notdef glyph
     const notdefGlyph = new opentype.Glyph({
@@ -45,9 +46,9 @@ export class FontGenerator {
     const font = new opentype.Font({
       familyName: fontProject.metadata.name,
       styleName: "Regular",
-      unitsPerEm: fontProject.metadata.unitsPerEm || 1000,
-      ascender: fontProject.metadata.ascender || 800,
-      descender: fontProject.metadata.descender || -200,
+      unitsPerEm: 1000,
+      ascender: 800,
+      descender: -200,
       glyphs: glyphs,
     });
 
@@ -60,7 +61,7 @@ export class FontGenerator {
     return ttfBuffer; // Placeholder
   }
 
-  static async exportAsTtf(fontProject: FontProject): Promise<ArrayBuffer> {
+  static async exportAsOtf(fontProject: FontProject): Promise<ArrayBuffer> {
     return this.generateFont(fontProject);
   }
 }

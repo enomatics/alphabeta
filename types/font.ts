@@ -16,12 +16,6 @@ export interface FontMetadata {
   authorId: string;
   creationDate: Date;
   version: string;
-  style: string;
-  weight: number;
-  unitsPerEm: number;
-  ascender: number;
-  descender: number;
-  lineGap: number;
   description?: string;
   license?: string;
 }
