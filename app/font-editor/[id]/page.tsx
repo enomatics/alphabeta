@@ -1,14 +1,16 @@
+"use client";
+
 import CharacterMapping from "@/components/CharacterMapping";
 import FontPreview from "@/components/FontPreview";
 import GlyphEditor from "@/components/GlyphEditor";
 import { FontProject, GlyphData } from "@/types/font";
 import { FontGenerator } from "@/utils/FontGenerator";
-import { useRouter } from "next/router";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const FontEditorPage = () => {
-  const router = useRouter();
-  const { id } = router.query;
+  const params = useParams();
+  const { id } = params;
 
   const [fontProject, setFontProject] = useState<FontProject | null>(null);
   const [selectedGlyph, setSelectedGlyph] = useState<GlyphData | null>(null);
@@ -185,7 +187,7 @@ const FontEditorPage = () => {
         <div>
           <h1 className="text-2xl font-bold">{fontProject.metadata.name}</h1>
           <p className="text-sm text-gray-500">
-            By {fontProject.metadata.author} • {fontProject.glyphs.length}
+            By {fontProject.metadata.author} • {fontProject.glyphs.length}{" "}
             glyphs
           </p>
         </div>
@@ -295,4 +297,5 @@ const FontEditorPage = () => {
     </div>
   );
 };
+
 export default FontEditorPage;

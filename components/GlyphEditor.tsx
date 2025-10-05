@@ -1,3 +1,5 @@
+"use client";
+
 import { GlyphData } from "@/types/font";
 import Konva from "konva";
 import { useEffect, useRef, useState } from "react";
