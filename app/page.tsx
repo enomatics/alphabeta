@@ -1,11 +1,29 @@
-const page = () => {
+"use client";
+
+import GlyphEditor from "@/components/GlyphEditor";
+import GlyphsList from "@/components/GlyphsList";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
+
+const HomePage = () => {
+  const [inputValue, setInputValue] = useState("Handwritten Font Name");
+
+  const alphabets = Array.from(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+  );
+  const numbers = Array.from("1234567890");
+  const basicPunctuation = Array.from(
+    `. , ; : ? ! ' " ( ) [ ] { } - – — /`.split(" ").join(""),
+  );
+
   return (
     <div className="flex h-screen flex-col">
       <header className="flex w-full items-center justify-between border-b border-zinc-400 bg-gray-100 px-6 py-3 text-black shadow-2xl">
         <div className="profile rounded-full border border-zinc-900 bg-gray-400 p-3"></div>
         <input
-          className="font-name rounded-lg border border-zinc-900 px-3 py-1"
-          value="Handwritten Font Name"
+          className="font-name rounded-lg border border-zinc-900 px-3 py-1 text-center"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
         />
 
         <div className="group relative">
@@ -35,21 +53,58 @@ const page = () => {
         </div>
       </header>
 
-      <main className="grid h-full items-center text-black">
-        <div className="sidebar flex h-full w-[25%] flex-col border-r border-zinc-400 bg-gray-200 shadow-2xl">
-          <div className="w-full border-b border-zinc-400 px-6 py-4">
-            Alphabets (A-Z)
+      <main className="grid max-h-full w-full flex-1 grid-cols-[350px_1fr_450px] items-center overflow-hidden text-black">
+        <div className="sidebar shadow-2x h-full overflow-y-auto border-r border-zinc-400 bg-gray-200">
+          <div className="overflow-autol flex !max-h-[100%] w-full flex-col pb-16">
+            {/* <div className="w-full border-b border-zinc-400 px-6 py-4">
+              Alphabets (A-Z)
+            </div>
+            <div className="w-full border-b border-zinc-400 px-6 py-4">
+              Numbers (0-9)
+            </div>
+            <div className="w-full border-b border-zinc-400 px-6 py-4">
+              Symbols
+            </div> */}
+
+            <GlyphsList
+              listName="Alphabets (A-Z)"
+              characters={alphabets}
+              isOpen
+            />
+            <GlyphsList listName="Numbers (9-0)" characters={numbers} isOpen />
+            <GlyphsList
+              listName="Basic Punctuation"
+              characters={basicPunctuation}
+              isOpen
+            />
           </div>
-          <div className="w-full border-b border-zinc-400 px-6 py-4">
-            Numbers (0-9)
+        </div>
+        <div className="relative flex h-full items-center justify-around bg-amber-100">
+          <button className="rounded-full border border-zinc-400 bg-blue-400 p-4">
+            <ChevronLeft />
+          </button>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-center gap-2 self-start">
+              <button className="cursor-pointer rounded border bg-red-500 px-4 py-2">
+                Clear canvas
+              </button>
+              <button className="cursor-pointer rounded border bg-blue-500 px-4 py-2">
+                Save glyph
+              </button>
+            </div>
+            <GlyphEditor strokeSize={32} canvasSize={500} />
           </div>
-          <div className="w-full border-b border-zinc-400 px-6 py-4">
-            Symbols
-          </div>
+          <button className="rounded-full border border-zinc-400 bg-blue-400 p-4">
+            <ChevronRight />
+          </button>
+        </div>
+        <div className="flex h-full w-full flex-col items-center border-l border-zinc-400 bg-gray-200 p-4">
+          <div className="glyph-preview size-[150px] rounded-sm border border-red-400 bg-gray-900"></div>
+          <div></div>
         </div>
       </main>
     </div>
   );
 };
 
-export default page;
+export default HomePage;

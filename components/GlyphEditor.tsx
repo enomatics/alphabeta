@@ -1,225 +1,170 @@
 "use client";
 
-import { GlyphData } from "@/types/font";
-import Konva from "konva";
-import { useEffect, useRef, useState } from "react";
-import { Layer, Line, Stage } from "react-konva";
+import { getPathFromStroke, Point } from "@/utils/fontUtils";
+import getStroke from "perfect-freehand";
+import React, { useRef, useState } from "react";
 
 interface GlyphEditorProps {
-  glyph: GlyphData | null;
-  onChange: (updatedGlyph: GlyphData) => void;
-  canvasWidth?: number;
-  canvasHeight?: number;
+  canvasSize: number;
+  strokeSize: number;
+  thinning?: number;
+  smoothing?: number;
+  streamline?: number;
+  simulatePressure?: boolean;
 }
 
 const GlyphEditor: React.FC<GlyphEditorProps> = ({
-  glyph,
-  onChange,
-  canvasWidth = 800,
-  canvasHeight = 800,
+  canvasSize,
+  strokeSize,
+  thinning = 0.5,
+  smoothing = 0.5,
+  streamline = 0.5,
+  simulatePressure = true,
 }) => {
-  const stageRef = useRef<Konva.Stage>(null);
-  const [tool, setTool] = useState<"pen" | "rectangle" | "circle" | "select">(
-    "pen",
-  );
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [currentPath, setCurrentPath] = useState<number[]>([]);
+  const [isDrawing, setIsDrawing] = useState<boolean>(false);
+  // const [points, setPoints] = useState<Point[]>([]);
+  const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
+  const [paths, setPaths] = useState<string[]>([]);
+  const svgRef = useRef<SVGSVGElement>(null);
 
-  useEffect(() => {
-    if (stageRef.current && glyph && glyph.konvaData) {
-      stageRef.current.getChildren().forEach((layer) => layer.destroy());
-      const stage = stageRef.current;
+  // Font Metrics (Relative to canvas)
+  const BASELINE = canvasSize * 0.7;
+  const ASCENDER = canvasSize * 0.05;
+  const TYPO_ASCENDER = canvasSize * 0.125;
+  const TYPO_DESCENDER = canvasSize * 0.925;
+  const DESCENDER = canvasSize * 0.95;
 
-      try {
-        const loadedStage = Konva.Node.create(glyph.konvaData, stage);
-        stage.add(loadedStage.getChildren()[0]); // Layer
-        stage.draw();
-      } catch (error) {
-        console.error("Failed to load glyph konvaData:", error);
-      }
-    }
-  }, [glyph]);
+  const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    // (e.target as Element).setPointerCapture(e.pointerId);
+    // setPoints([{ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY }]);
 
-  const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
     setIsDrawing(true);
-    const pos = e.target.getStage()?.getPointerPosition();
-
-    if (tool === "pen" && pos) {
-      setCurrentPath([pos.x, pos.y]);
-    }
+    setCurrentPoints([[e.nativeEvent.offsetX, e.nativeEvent.offsetY] as Point]);
+    // console.log(currentPoints);
   };
 
-  const handleMouseMove = (e: Konva.KonvaEventObject<MouseEvent>) => {
+  const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    // if (e.buttons !== 1) return;
+    // setPoints((prevPoints) => [
+    //   ...prevPoints,
+    //   { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY },
+    // ]);
+
     if (!isDrawing) return;
-
-    const stage = e.target.getStage();
-    const point = stage?.getPointerPosition();
-
-    if (tool === "pen" && point) {
-      setCurrentPath((prev) => [...prev, point.x, point.y]);
-    }
+    const newPoint: Point = [e.nativeEvent.offsetX, e.nativeEvent.offsetY];
+    const newPoints = [...currentPoints, newPoint];
+    setCurrentPoints(newPoints);
+    // console.log(currentPoints);
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
+    if (!isDrawing) return;
     setIsDrawing(false);
 
-    if (tool === "pen" && currentPath.length > 0) {
-      const layer = stageRef.current?.getChildren()[0] as Konva.Layer;
-      if (layer) {
-        const line = new Konva.Line({
-          points: currentPath,
-          stroke: "black",
-          strokeWidth: 2,
-          lineCap: "round",
-          lineJoin: "round",
-        });
-        layer.add(line);
-        layer.draw();
-      }
-    }
-
-    setCurrentPath([]);
-    saveGlyphData();
-  };
-
-  const saveGlyphData = () => {
-    if (!stageRef.current || !glyph) return;
-
-    const stage = stageRef.current;
-    const konvaData = stage.toJSON();
-
-    // Convert Konva shapes to SVG path data
-    const pathData = convertKonvaToPath(stage);
-
-    const updatedGlyph: GlyphData = {
-      ...glyph,
-      konvaData,
-      pathData,
-    };
-
-    onChange(updatedGlyph);
-  };
-
-  const convertKonvaToPath = (stage: Konva.Stage): string => {
-    // TODO: Implement a more comprehensive conversion if needed
-    let pathData = "";
-
-    stage.find("Line").forEach((line: any) => {
-      const points = line.points();
-      if (points.length >= 4) {
-        pathData += `M ${points[0]} ${points[1]} `;
-        for (let i = 2; i < points.length; i += 2) {
-          pathData += `L ${points[i]} ${points[i + 1]} `;
-        }
-      }
+    const stroke = getStroke(currentPoints, {
+      size: strokeSize,
+      thinning,
+      smoothing,
+      streamline,
+      simulatePressure,
     });
 
-    return pathData;
-  };
+    const pathData = getPathFromStroke(stroke as Point[]);
+    if (pathData) {
+      setPaths((prevPaths) => [...prevPaths, pathData]);
+      console.log(paths);
 
-  const addRectangle = () => {
-    const layer = stageRef.current?.getChildren()[0] as Konva.Layer;
-    if (layer) {
-      const rect = new Konva.Rect({
-        x: 100,
-        y: 100,
-        width: 100,
-        height: 100,
-        stroke: "black",
-        strokeWidth: 2,
-        draggable: true,
-      });
-      layer.add(rect);
-      layer.draw();
-      saveGlyphData();
+      setCurrentPoints([]);
     }
   };
 
-  const addCircle = () => {
-    const layer = stageRef.current?.getChildren()[0] as Konva.Layer;
-    if (layer) {
-      const circle = new Konva.Circle({
-        x: 150,
-        y: 150,
-        radius: 50,
-        stroke: "black",
-        strokeWidth: 2,
-        draggable: true,
-      });
-      layer.add(circle);
-      layer.draw();
-      saveGlyphData();
-    }
-  };
-
-  const clearCanvas = () => {
-    const layer = stageRef.current?.getChildren()[0] as Konva.Layer;
-    if (layer) {
-      layer.destroyChildren();
-      layer.draw();
-      saveGlyphData();
-    }
-  };
+  // Live update
+  const liveStroke = getPathFromStroke(
+    getStroke(currentPoints, { size: strokeSize }) as Point[],
+  );
 
   return (
-    <div className="glyph-editor">
-      <div className="toolbar mb-2 flex gap-2">
-        <button
-          className={`rounded px-4 py-2 ${tool === "pen" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-          onClick={() => setTool("pen")}
-        >
-          Pen
-        </button>
-        <button
-          className={`rounded px-4 py-2 ${tool === "pen" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-          onClick={() => setTool("select")}
-        >
-          Select
-        </button>
-        <button
-          onClick={addRectangle}
-          className="rounded bg-gray-200 px-4 py-2 hover:bg-gray-300"
-        >
-          Rectangle
-        </button>
-        <button
-          onClick={addCircle}
-          className="rounded bg-gray-200 px-4 py-2 hover:bg-gray-300"
-        >
-          Circle
-        </button>
-        <button
-          onClick={clearCanvas}
-          className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-        >
-          Clear
-        </button>
-      </div>
+    <div className="flex items-center justify-center border border-red-600">
+      <svg
+        ref={svgRef}
+        width={`${canvasSize}px`}
+        height={`${canvasSize}px`}
+        className="touch-none border border-blue-700 bg-white"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
+        {/* ___Guide lines___ */}
+        <g strokeWidth={1}>
+          {/* Ascender */}
+          <line
+            x1={0}
+            x2={canvasSize}
+            y1={ASCENDER}
+            y2={ASCENDER}
+            stroke="#ff0000"
+            strokeDasharray={"4 4"}
+          />
+          <text x={5} y={ASCENDER - 5} fontSize={10} fill="#ff0000">
+            Ascender
+          </text>
+          {/* Typo Ascender */}
+          <line
+            x1={0}
+            x2={canvasSize}
+            y1={TYPO_ASCENDER}
+            y2={TYPO_ASCENDER}
+            stroke="#ff0000"
+            strokeDasharray={"4 4"}
+          />
+          <text x={5} y={TYPO_ASCENDER - 5} fontSize={10} fill="#ff0000">
+            Typo Ascender
+          </text>
+          {/* Baseline */}
+          <line
+            x1={0}
+            x2={canvasSize}
+            y1={BASELINE}
+            y2={BASELINE}
+            stroke="#ff0000"
+            strokeDasharray={"4 4"}
+          />
+          <text x={5} y={BASELINE - 5} fontSize={10} fill="#ff0000">
+            Baseline
+          </text>
+          {/* Typo Descender */}
+          <line
+            x1={0}
+            x2={canvasSize}
+            y1={TYPO_DESCENDER}
+            y2={TYPO_DESCENDER}
+            stroke="#ff0000"
+            strokeDasharray={"4 4"}
+          />
+          <text x={5} y={TYPO_DESCENDER - 5} fontSize={10} fill="#ff0000">
+            Typo Descender
+          </text>
+          {/* Descender */}
+          <line
+            x1={0}
+            x2={canvasSize}
+            y1={DESCENDER}
+            y2={DESCENDER}
+            stroke="#ff0000"
+            strokeDasharray={"4 4"}
+          />
+          <text x={5} y={DESCENDER - 5} fontSize={10} fill="#ff0000">
+            Descender
+          </text>
+        </g>
 
-      <div>
-        <Stage
-          width={canvasWidth}
-          height={canvasHeight}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-          ref={stageRef}
-        >
-          <Layer>
-            {/* Refeerence grid lines */}
-            <Line
-              points={[0, canvasHeight / 2, canvasWidth, canvasHeight / 2]}
-              stroke={"#ddd"}
-              strokeWidth={1}
-            />
-            <Line
-              points={[canvasWidth / 2, 0, canvasWidth / 2, canvasHeight]}
-              stroke={"#ddd"}
-              strokeWidth={1}
-            />
-          </Layer>
-        </Stage>
-      </div>
+        {/* Static paths */}
+        {paths.map((d, i) => (
+          <path key={i} d={d} fill="black" />
+        ))}
+        {/* Current live path */}
+        {isDrawing && <path d={liveStroke} fill="black" />}
+      </svg>
     </div>
   );
 };
