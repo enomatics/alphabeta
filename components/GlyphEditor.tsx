@@ -1,5 +1,6 @@
 "use client";
 
+import { useGlyphStore } from "@/app/store";
 import { getPathFromStroke, Point } from "@/utils/fontUtils";
 import getStroke from "perfect-freehand";
 import React, { useRef, useState } from "react";
@@ -24,7 +25,7 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   // const [points, setPoints] = useState<Point[]>([]);
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
-  const [paths, setPaths] = useState<string[]>([]);
+  // const [paths, setPaths] = useState<string[]>([]);
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Font Metrics (Relative to canvas)
@@ -33,6 +34,8 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
   const TYPO_ASCENDER = canvasSize * 0.125;
   const TYPO_DESCENDER = canvasSize * 0.925;
   const DESCENDER = canvasSize * 0.95;
+
+  const { glyphs, activeGlyph, addPathToGlyph } = useGlyphStore();
 
   const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     // (e.target as Element).setPointerCapture(e.pointerId);
@@ -71,9 +74,8 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
 
     const pathData = getPathFromStroke(stroke as Point[]);
     if (pathData) {
-      setPaths((prevPaths) => [...prevPaths, pathData]);
-      console.log(paths);
-
+      // setPaths((prevPaths) => [...prevPaths, pathData]);
+      addPathToGlyph(activeGlyph, pathData);
       setCurrentPoints([]);
     }
   };
@@ -82,6 +84,8 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
   const liveStroke = getPathFromStroke(
     getStroke(currentPoints, { size: strokeSize }) as Point[],
   );
+  console.log(glyphs);
+  // const glyphsMap = glyphs[activeGlyph];
 
   return (
     <div className="flex items-center justify-center border border-red-600">
@@ -159,9 +163,15 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
         </g>
 
         {/* Static paths */}
-        {paths.map((d, i) => (
+        {/* {paths.map((d, i) => (
           <path key={i} d={d} fill="black" />
-        ))}
+        ))} */}
+
+        {glyphs[activeGlyph] &&
+          glyphs[activeGlyph].map((d, i) => (
+            <path key={i} d={d} fill="black" />
+          ))}
+
         {/* Current live path */}
         {isDrawing && <path d={liveStroke} fill="black" />}
       </svg>

@@ -41,6 +41,7 @@ export function getSVGPathFromStroke(points: number[][], closed = true) {
 
 */
 
+// /*
 export function getPathFromStroke(
   points: Point[],
   options?: { tension?: number; closeThreshold?: number },
@@ -90,6 +91,7 @@ export function getPathFromStroke(
   if (shouldClose) d += " Z";
   return d;
 }
+// */
 
 const canvasToFontCoords = (
   x: number,
@@ -118,12 +120,13 @@ export const createFontFromGlyphs = (
   });
 
   Object.entries(glyphMap).forEach(([char, paths]) => {
+    // if (!paths.length) return;
+
     const glyphPath = new opentype.Path();
 
     paths.forEach((path) => {
       const commands = parseAndNormalizeSvgPath(path);
-
-      console.log(commands);
+      // console.log(commands);
 
       commands.forEach(({ command, args }) => {
         switch (command.toUpperCase()) {
