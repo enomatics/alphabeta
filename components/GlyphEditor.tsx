@@ -100,6 +100,14 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
       >
         {/* ___Guide lines___ */}
         <g strokeWidth={1}>
+          <line
+            x1={canvasSize / 2}
+            x2={canvasSize / 2}
+            y1={0}
+            y2={canvasSize}
+            stroke="#001eff"
+            strokeDasharray={"4 4"}
+          />
           {/* Ascender */}
           <line
             x1={0}
@@ -109,7 +117,13 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
             stroke="#ff0000"
             strokeDasharray={"4 4"}
           />
-          <text x={5} y={ASCENDER - 5} fontSize={10} fill="#ff0000">
+          <text
+            x={5}
+            y={ASCENDER - 5}
+            className="select-none"
+            fontSize={10}
+            fill="#ff0000"
+          >
             Ascender
           </text>
           {/* Typo Ascender */}
@@ -121,7 +135,13 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
             stroke="#ff0000"
             strokeDasharray={"4 4"}
           />
-          <text x={5} y={TYPO_ASCENDER - 5} fontSize={10} fill="#ff0000">
+          <text
+            x={5}
+            y={TYPO_ASCENDER - 5}
+            className="select-none"
+            fontSize={10}
+            fill="#ff0000"
+          >
             Typo Ascender
           </text>
           {/* Baseline */}
@@ -133,7 +153,13 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
             stroke="#ff0000"
             strokeDasharray={"4 4"}
           />
-          <text x={5} y={BASELINE - 5} fontSize={10} fill="#ff0000">
+          <text
+            x={5}
+            y={BASELINE - 5}
+            className="select-none"
+            fontSize={10}
+            fill="#ff0000"
+          >
             Baseline
           </text>
           {/* Typo Descender */}
@@ -145,7 +171,13 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
             stroke="#ff0000"
             strokeDasharray={"4 4"}
           />
-          <text x={5} y={TYPO_DESCENDER - 5} fontSize={10} fill="#ff0000">
+          <text
+            x={5}
+            y={TYPO_DESCENDER - 5}
+            className="select-none"
+            fontSize={10}
+            fill="#ff0000"
+          >
             Typo Descender
           </text>
           {/* Descender */}
@@ -157,7 +189,13 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
             stroke="#ff0000"
             strokeDasharray={"4 4"}
           />
-          <text x={5} y={DESCENDER - 5} fontSize={10} fill="#ff0000">
+          <text
+            x={5}
+            y={DESCENDER - 5}
+            className="select-none"
+            fontSize={10}
+            fill="#ff0000"
+          >
             Descender
           </text>
         </g>

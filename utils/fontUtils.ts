@@ -120,35 +120,108 @@ export const createFontFromGlyphs = (
   });
 
   Object.entries(glyphMap).forEach(([char, paths]) => {
-    // if (!paths.length) return;
+    if (!paths.length) return;
 
     const glyphPath = new opentype.Path();
 
+    /*
+    const commands: SvgCommand[] = [];
     paths.forEach((path) => {
-      const commands = parseAndNormalizeSvgPath(path);
-      // console.log(commands);
+      const svgCommands = parseAndNormalizeSvgPath(path);
+      
+      svgCommands.forEach((cmd) => {
+        if ("x" in cmd && "y" in cmd)
+          [cmd.x, cmd.y] = canvasToFontCoords(
+            Number(cmd.x),
+            Number(cmd.y),
+            canvasHeight,
+            unitsPerEm,
+            );
+            
+            if ("x1" in cmd && "y1" in cmd)
+            [cmd.x1, cmd.y1] = canvasToFontCoords(
+            Number(cmd.x1),
+            Number(cmd.y1),
+            canvasHeight,
+            unitsPerEm,
+            );
+        if ("x2" in cmd && "y2" in cmd)
+          [cmd.x2, cmd.y2] = canvasToFontCoords(
+            Number(cmd.x2),
+            Number(cmd.y2),
+            canvasHeight,
+            unitsPerEm,
+            );
+            });
+            
+            commands.push(...svgCommands);
+            // console.log("commands structure after vertical flip: ", commands);
+            });
+            */
 
-      commands.forEach(({ command, args }) => {
+    paths.forEach((path) => {
+      const svgCommands = parseAndNormalizeSvgPath(path);
+
+      svgCommands.forEach(({ command, args }) => {
         switch (command.toUpperCase()) {
-          case "M":
-            glyphPath.moveTo(args[0], args[1]);
-            break;
-          case "L":
-            glyphPath.lineTo(args[0], args[1]);
-            break;
-          case "Q":
-            glyphPath.quadTo(args[0], args[1], args[2], args[3]);
-            break;
-          case "C":
-            glyphPath.curveTo(
+          case "M": {
+            const [x, y] = canvasToFontCoords(
               args[0],
               args[1],
+              canvasHeight,
+              unitsPerEm,
+            );
+            glyphPath.moveTo(x, y);
+            break;
+          }
+          case "L": {
+            const [x, y] = canvasToFontCoords(
+              args[0],
+              args[1],
+              canvasHeight,
+              unitsPerEm,
+            );
+            glyphPath.lineTo(x, y);
+            break;
+          }
+          case "Q": {
+            const [x, y] = canvasToFontCoords(
+              args[0],
+              args[1],
+              canvasHeight,
+              unitsPerEm,
+            );
+            const [x1, y1] = canvasToFontCoords(
               args[2],
               args[3],
-              args[4],
-              args[5],
+              canvasHeight,
+              unitsPerEm,
             );
+            glyphPath.quadTo(x, y, x1, y1);
             break;
+          }
+          case "C": {
+            const [x, y] = canvasToFontCoords(
+              args[0],
+              args[1],
+              canvasHeight,
+              unitsPerEm,
+            );
+            const [x1, y1] = canvasToFontCoords(
+              args[2],
+              args[3],
+              canvasHeight,
+              unitsPerEm,
+            );
+            const [x2, y2] = canvasToFontCoords(
+              args[2],
+              args[3],
+              canvasHeight,
+              unitsPerEm,
+            );
+            glyphPath.curveTo(x, y, x1, y1, x2, y2);
+            break;
+          }
           case "Z":
             glyphPath.close();
             break;
