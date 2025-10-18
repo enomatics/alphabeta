@@ -9,6 +9,13 @@ type GlyphStore = {
   clearGlyph: () => void;
 };
 
+type CanvasStore = {
+  canvasSize: number;
+  baseline: number;
+  ascender: number;
+  descender: number;
+};
+
 export const useGlyphStore = create<GlyphStore>((set) => ({
   glyphs: {},
   activeGlyph: "A",
@@ -25,3 +32,17 @@ export const useGlyphStore = create<GlyphStore>((set) => ({
     set((state) => ({ glyphs: { ...state.glyphs, [state.activeGlyph]: [] } }));
   },
 }));
+
+export const useCanvasStore = create<CanvasStore>(() => {
+  const canvasSize = 500;
+  const baseline = canvasSize * 0.7;
+  const ascender = baseline - canvasSize * 0.65;
+  const descender = baseline + canvasSize * 0.27;
+
+  return {
+    canvasSize,
+    baseline,
+    ascender,
+    descender,
+  };
+});

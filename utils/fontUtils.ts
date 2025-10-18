@@ -96,12 +96,19 @@ export function getPathFromStroke(
 const canvasToFontCoords = (
   x: number,
   y: number,
-  canvasHeight = 500,
+  canvasSize = 500,
   unitsPerEm = 1000,
 ) => {
-  const scale = unitsPerEm / canvasHeight;
-  const flippedY = canvasHeight - y; //vertically flip
-  return [x * scale, flippedY * scale];
+  const BASELINE = canvasSize * 0.7;
+  const ASCENDER = BASELINE - canvasSize * 0.65;
+  const DESCENDER = BASELINE + canvasSize * 0.27;
+
+  const canvasGlyphHeight = DESCENDER - ASCENDER;
+  const scale = unitsPerEm / canvasGlyphHeight;
+
+  const dx = x * scale;
+  const dy = (BASELINE - y) * scale; //vertically flip
+  return [dx, dy];
 };
 
 export const createFontFromGlyphs = (
@@ -111,6 +118,16 @@ export const createFontFromGlyphs = (
   const unitsPerEm = 1000;
   const canvasHeight = 500;
   const glyphs: opentype.Glyph[] = [];
+
+  const BASELINE = canvasHeight * 0.7;
+  const ASCENDER = BASELINE - canvasHeight * 0.65;
+  const DESCENDER = BASELINE + canvasHeight * 0.27;
+
+  const canvasGlyphHeight = DESCENDER - ASCENDER;
+  const scale = unitsPerEm / canvasGlyphHeight;
+
+  const fontAscender = (BASELINE - ASCENDER) * scale;
+  const fontDescender = -(DESCENDER - BASELINE) * scale;
 
   // .notdef required
   const notdefGlyph = new opentype.Glyph({
@@ -123,41 +140,6 @@ export const createFontFromGlyphs = (
     if (!paths.length) return;
 
     const glyphPath = new opentype.Path();
-
-    /*
-    const commands: SvgCommand[] = [];
-    paths.forEach((path) => {
-      const svgCommands = parseAndNormalizeSvgPath(path);
-      
-      svgCommands.forEach((cmd) => {
-        if ("x" in cmd && "y" in cmd)
-          [cmd.x, cmd.y] = canvasToFontCoords(
-            Number(cmd.x),
-            Number(cmd.y),
-            canvasHeight,
-            unitsPerEm,
-            );
-            
-            if ("x1" in cmd && "y1" in cmd)
-            [cmd.x1, cmd.y1] = canvasToFontCoords(
-            Number(cmd.x1),
-            Number(cmd.y1),
-            canvasHeight,
-            unitsPerEm,
-            );
-        if ("x2" in cmd && "y2" in cmd)
-          [cmd.x2, cmd.y2] = canvasToFontCoords(
-            Number(cmd.x2),
-            Number(cmd.y2),
-            canvasHeight,
-            unitsPerEm,
-            );
-            });
-            
-            commands.push(...svgCommands);
-            // console.log("commands structure after vertical flip: ", commands);
-            });
-            */
 
     paths.forEach((path) => {
       const svgCommands = parseAndNormalizeSvgPath(path);
@@ -247,8 +229,8 @@ export const createFontFromGlyphs = (
     familyName,
     styleName: "Regular",
     unitsPerEm,
-    ascender: 800,
-    descender: -200,
+    ascender: fontAscender,
+    descender: fontDescender,
     glyphs,
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useGlyphStore } from "@/app/store";
+import { useCanvasStore, useGlyphStore } from "@/app/store";
 import { getPathFromStroke, Point } from "@/utils/fontUtils";
 import getStroke from "perfect-freehand";
 import React, { useRef, useState } from "react";
@@ -29,11 +29,12 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Font Metrics (Relative to canvas)
-  const BASELINE = canvasSize * 0.7;
-  const ASCENDER = canvasSize * 0.05;
+  const { baseline, ascender, descender } = useCanvasStore();
+  // const BASELINE = canvasSize * 0.7;
+  // const ASCENDER = BASELINE - canvasSize * 0.65;
   const TYPO_ASCENDER = canvasSize * 0.125;
   const TYPO_DESCENDER = canvasSize * 0.925;
-  const DESCENDER = canvasSize * 0.95;
+  // const DESCENDER = BASELINE + canvasSize * 0.27;
 
   const { glyphs, activeGlyph, addPathToGlyph } = useGlyphStore();
 
@@ -112,14 +113,14 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
           <line
             x1={0}
             x2={canvasSize}
-            y1={ASCENDER}
-            y2={ASCENDER}
+            y1={ascender}
+            y2={ascender}
             stroke="#ff0000"
             strokeDasharray={"4 4"}
           />
           <text
             x={5}
-            y={ASCENDER - 5}
+            y={ascender - 5}
             className="select-none"
             fontSize={10}
             fill="#ff0000"
@@ -148,14 +149,14 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
           <line
             x1={0}
             x2={canvasSize}
-            y1={BASELINE}
-            y2={BASELINE}
+            y1={baseline}
+            y2={baseline}
             stroke="#ff0000"
             strokeDasharray={"4 4"}
           />
           <text
             x={5}
-            y={BASELINE - 5}
+            y={baseline - 5}
             className="select-none"
             fontSize={10}
             fill="#ff0000"
@@ -184,14 +185,14 @@ const GlyphEditor: React.FC<GlyphEditorProps> = ({
           <line
             x1={0}
             x2={canvasSize}
-            y1={DESCENDER}
-            y2={DESCENDER}
+            y1={descender}
+            y2={descender}
             stroke="#ff0000"
             strokeDasharray={"4 4"}
           />
           <text
             x={5}
-            y={DESCENDER - 5}
+            y={descender - 5}
             className="select-none"
             fontSize={10}
             fill="#ff0000"

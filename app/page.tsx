@@ -5,11 +5,12 @@ import GlyphsList from "@/components/GlyphsList";
 import { createFontFromGlyphs, downloadFont } from "@/utils/fontUtils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
-import { useGlyphStore } from "./store";
+import { useCanvasStore, useGlyphStore } from "./store";
 
 const HomePage = () => {
   const [inputValue, setInputValue] = useState("Handwritten Font Name");
   const { glyphs, clearGlyph } = useGlyphStore();
+  const { canvasSize } = useCanvasStore();
 
   const alphabets = Array.from(
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
@@ -93,7 +94,7 @@ const HomePage = () => {
                 Save glyph
               </button>
             </div>
-            <GlyphEditor strokeSize={32} canvasSize={500} />
+            <GlyphEditor strokeSize={32} canvasSize={canvasSize} />
           </div>
           <button className="rounded-full border border-blue-600 bg-blue-400 p-4">
             <ChevronRight />
