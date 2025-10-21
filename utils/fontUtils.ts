@@ -98,6 +98,7 @@ const canvasToFontCoords = (
   y: number,
   canvasSize = 500,
   unitsPerEm = 1000,
+  offsetX = 0,
 ) => {
   const BASELINE = canvasSize * 0.7;
   const ASCENDER = BASELINE - canvasSize * 0.65;
@@ -106,7 +107,7 @@ const canvasToFontCoords = (
   const canvasGlyphHeight = DESCENDER - ASCENDER;
   const scale = unitsPerEm / canvasGlyphHeight;
 
-  const dx = x * scale;
+  const dx = x * scale + offsetX;
   const dy = (BASELINE - y) * scale; //vertically flip
   return [dx, dy];
 };
@@ -132,7 +133,7 @@ export const createFontFromGlyphs = (
   // .notdef required
   const notdefGlyph = new opentype.Glyph({
     name: ".notdef",
-    advanceWidth: 650,
+    advanceWidth: 500,
     path: new opentype.Path(),
   });
 
@@ -140,9 +141,30 @@ export const createFontFromGlyphs = (
     if (!paths.length) return;
 
     const glyphPath = new opentype.Path();
+    let minX = Infinity,
+      maxX = -Infinity;
 
     paths.forEach((path) => {
       const svgCommands = parseAndNormalizeSvgPath(path);
+
+      svgCommands.forEach((cmd) => {
+        const allX = [];
+        if (cmd.args[0]) allX.push(cmd.args[0]);
+        if (cmd.args[2]) allX.push(cmd.args[2]);
+        if (cmd.args[4]) allX.push(cmd.args[4]);
+
+        allX.forEach((x) => {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+        });
+      });
+
+      const glyphWidth = (maxX - minX) * scale;
+      const sideBearing = unitsPerEm * 0.05;
+      const advanceWidth = glyphWidth + sideBearing * 2;
+
+      const glyphCenter = minX + (maxX - minX) / 2;
+      const dx = advanceWidth / 2 - glyphCenter * scale;
 
       svgCommands.forEach(({ command, args }) => {
         switch (command.toUpperCase()) {
@@ -152,6 +174,7 @@ export const createFontFromGlyphs = (
               args[1],
               canvasHeight,
               unitsPerEm,
+              dx,
             );
             glyphPath.moveTo(x, y);
             break;
@@ -162,46 +185,52 @@ export const createFontFromGlyphs = (
               args[1],
               canvasHeight,
               unitsPerEm,
+              dx,
             );
             glyphPath.lineTo(x, y);
             break;
           }
           case "Q": {
-            const [x, y] = canvasToFontCoords(
+            const [x1, y1] = canvasToFontCoords(
               args[0],
               args[1],
               canvasHeight,
               unitsPerEm,
+              dx,
             );
-            const [x1, y1] = canvasToFontCoords(
+            const [x, y] = canvasToFontCoords(
               args[2],
               args[3],
               canvasHeight,
               unitsPerEm,
+              dx,
             );
-            glyphPath.quadTo(x, y, x1, y1);
+            glyphPath.quadTo(x1, y1, x, y);
             break;
           }
           case "C": {
-            const [x, y] = canvasToFontCoords(
+            const [x1, y1] = canvasToFontCoords(
               args[0],
               args[1],
               canvasHeight,
               unitsPerEm,
-            );
-            const [x1, y1] = canvasToFontCoords(
-              args[2],
-              args[3],
-              canvasHeight,
-              unitsPerEm,
+              dx,
             );
             const [x2, y2] = canvasToFontCoords(
               args[2],
               args[3],
               canvasHeight,
               unitsPerEm,
+              dx,
             );
-            glyphPath.curveTo(x, y, x1, y1, x2, y2);
+            const [x, y] = canvasToFontCoords(
+              args[4],
+              args[5],
+              canvasHeight,
+              unitsPerEm,
+              dx,
+            );
+            glyphPath.curveTo(x1, y1, x2, y2, x, y);
             break;
           }
           case "Z":
@@ -213,11 +242,16 @@ export const createFontFromGlyphs = (
 
     console.log(glyphPath); // {commands: [...], fill: 'black', stroke: null, strokeWidth: 1}
 
+    const glyphWidth = (maxX - minX) * scale;
+    const sideBearing = unitsPerEm * 0.05;
+    const advanceWidth = glyphWidth + sideBearing * 2;
+
     const glyph = new opentype.Glyph({
       name: char,
       unicode: char.charCodeAt(0),
-      advanceWidth: 500,
+      advanceWidth,
       path: glyphPath,
+      leftSideBearing: sideBearing,
     });
 
     glyphs.push(glyph);
