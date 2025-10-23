@@ -1,12 +1,12 @@
 import opentype from "opentype.js";
-import { parseAndNormalizeSvgPath } from "./parseAndNormalizeSVGPath";
+import { normalizePathToCubic } from "./convertStrokesToPaths";
 
 export type Point = [number, number];
 
-/*
+// /*
 const average = (a: number, b: number) => (a + b) / 2;
 
-export function getSVGPathFromStroke(points: number[][], closed = true) {
+export function getPathFromStroke(points: number[][], closed = true) {
   const len = points.length;
 
   if (len < 4) {
@@ -39,9 +39,9 @@ export function getSVGPathFromStroke(points: number[][], closed = true) {
   return result;
 }
 
-*/
+// */
 
-// /*
+/*
 export function getPathFromStroke(
   points: Point[],
   options?: { tension?: number; closeThreshold?: number },
@@ -91,7 +91,7 @@ export function getPathFromStroke(
   if (shouldClose) d += " Z";
   return d;
 }
-// */
+*/
 
 const canvasToFontCoords = (
   x: number,
@@ -114,7 +114,7 @@ const canvasToFontCoords = (
 
 export const createFontFromGlyphs = (
   glyphMap: Record<string, string[]>,
-  familyName = "MyFont",
+  familyName = "my-handwritten-font",
 ) => {
   const unitsPerEm = 1000;
   const canvasHeight = 500;
@@ -133,7 +133,7 @@ export const createFontFromGlyphs = (
   // .notdef required
   const notdefGlyph = new opentype.Glyph({
     name: ".notdef",
-    advanceWidth: 500,
+    advanceWidth: 300,
     path: new opentype.Path(),
   });
 
@@ -145,8 +145,9 @@ export const createFontFromGlyphs = (
       maxX = -Infinity;
 
     paths.forEach((path) => {
-      const svgCommands = parseAndNormalizeSvgPath(path);
+      const svgCommands = normalizePathToCubic(path);
 
+      // Determine horizontal bounds
       svgCommands.forEach((cmd) => {
         const allX = [];
         if (cmd.args[0]) allX.push(cmd.args[0]);
@@ -166,6 +167,7 @@ export const createFontFromGlyphs = (
       const glyphCenter = minX + (maxX - minX) / 2;
       const dx = advanceWidth / 2 - glyphCenter * scale;
 
+      // Build glyph path
       svgCommands.forEach(({ command, args }) => {
         switch (command.toUpperCase()) {
           case "M": {
@@ -255,6 +257,8 @@ export const createFontFromGlyphs = (
     });
 
     glyphs.push(glyph);
+
+    console.log(glyphs);
   });
 
   glyphs.unshift(notdefGlyph);
@@ -271,12 +275,20 @@ export const createFontFromGlyphs = (
   return font;
 };
 
-export const downloadFont = (font: opentype.Font, filename = "MyFont.ttf") => {
+export const downloadFont = (
+  font: opentype.Font,
+  filename = "my-handwritten-font.otf",
+) => {
+  const sluggedFilename = filename
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9\-\.]/g, "");
+
   const buffer = font.toArrayBuffer();
   const blob = new Blob([buffer], { type: "font/opentype" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = filename;
+  link.download = sluggedFilename;
   link.click();
 };

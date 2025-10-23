@@ -74,9 +74,22 @@ export function parseAndNormalizeSvgPath(path: string): SvgCommand[] {
             const y1 = (isRelative ? currentY : 0) + args[idx++];
             const x = (isRelative ? currentX : 0) + args[idx++];
             const y = (isRelative ? currentY : 0) + args[idx++];
+
+            // Quadratic to Cubic conversion
+            const [c1, c2, p2] = quadraticToCubic(
+              [currentX, currentY],
+              [x1, y1],
+              [x, y],
+            );
+
+            commands.push({
+              command: "C",
+              args: [c1[0], c1[1], c2[0], c2[1], p2[0], p2[1]],
+            });
+
             currentX = x;
             currentY = y;
-            commands.push({ command: "Q", args: [x1, y1, x, y] });
+
             break;
           }
 
@@ -110,3 +123,20 @@ export function parseAndNormalizeSvgPath(path: string): SvgCommand[] {
   console.log(commands);
   return commands;
 }
+
+// Convert a quadratic Bezier curve to a cubic Bezier curve
+const quadraticToCubic = (
+  p0: [number, number],
+  p1: [number, number],
+  p2: [number, number],
+): [[number, number], [number, number], [number, number]] => {
+  const c1x = p0[0] + (2 / 3) * (p1[0] - p0[0]);
+  const c1y = p0[1] + (2 / 3) * (p1[1] - p0[1]);
+  const c2x = p2[0] + (2 / 3) * (p1[0] - p2[0]);
+  const c2y = p2[1] + (2 / 3) * (p1[1] - p2[1]);
+  return [
+    [c1x, c1y],
+    [c2x, c2y],
+    [p2[0], p2[1]],
+  ];
+};
